@@ -39,8 +39,7 @@ futureize = (asyncFn) ->
 
     # Treat generator functions the way co does
     if isGeneratorFunction(asyncFn)
-      co ->
-        return yield asyncFn.apply(fnThis, args)
+      co asyncFn.bind.apply(asyncFn, [fnThis, args...])
       .then (result) ->
         resolve = future.resolver()
         resolve(undefined, result)
