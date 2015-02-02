@@ -104,6 +104,19 @@ describe 'fibrous', ->
         expect(result).toEqual 1
         expect(Future.prototype['return'].callCount).toEqual 0
 
+  describe 'compatibility with generator functions', ->
+    it 'waits for generator functions', ->
+      genObj =
+        value: 10
+        genValue: ->
+          value = yield Promise.resolve(@value)
+          return yield @genIncrement(value)
+        genIncrement: (x) ->
+          return yield Promise.resolve(x + 1)
+
+      value = genObj.sync.genValue()
+      expect(value).toBe genObj.value + 1
+
   describe 'missing or misplaced callbacks seem to work for fibrous methods', ->
 
     it 'is ok for a fibrous method', (done) ->
@@ -165,7 +178,7 @@ describe 'fibrous', ->
       , (err) ->
         expect(err).toEqual(new Error('async error'))
         done()
-     
+
   describe 'middleware', ->
 
     it 'runs in a fiber', (done) ->

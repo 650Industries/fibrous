@@ -2,6 +2,9 @@ if process.fibrous?
   module.exports = process.fibrous
   return
 
+co = require 'co'
+isGeneratorFunction = require 'is-generator-function'
+
 Fiber = require 'fibers'
 Future = require 'fibers/future'
 
@@ -33,12 +36,24 @@ futureize = (asyncFn) ->
     return asyncFn.__fibrousFutureFn__.apply(fnThis, args) if asyncFn.__fibrousFutureFn__
 
     future = new Future()
-    args.push(future.resolver())
-    try
-      asyncFn.apply(fnThis, args)
-    catch e
-      # Ensure synchronous errors are returned via the future
-      future.throw(e)
+
+    # Treat generator functions the way co does
+    if isGeneratorFunction(asyncFn)
+      co ->
+        return yield asyncFn.apply(fnThis, args)
+      .then (result) ->
+        resolve = future.resolver()
+        resolve(undefined, result)
+      , (err) ->
+        future.throw(err)
+    else
+      args.push(future.resolver())
+      try
+        asyncFn.apply(fnThis, args)
+      catch e
+        # Ensure synchronous errors are returned via the future
+        future.throw(e)
+
     future
 
 synchronize = (asyncFn) ->
