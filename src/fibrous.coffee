@@ -1,3 +1,7 @@
+if process.fibrous?
+  module.exports = process.fibrous
+  return
+
 Fiber = require 'fibers'
 Future = require 'fibers/future'
 
